@@ -6,11 +6,12 @@ const fs = require('fs');
 const _ = require('lodash');
 
 const pdf = require('./lib/card-generator')();
+const YAML = require('js-yaml');
 
 const SRC_DIR = pr(__dirname, '../src');
 const DATA_DIR = pr(SRC_DIR, 'data');
 const DEST_DIR = pr(__dirname, '../dist');
-
+let images = YAML.safeLoad(fs.readFileSync(pr(DATA_DIR, 'images.yaml')));
 const ALPHABET = 'ABCDEFGHIJKMNOPQRSTUVWXYZ';
 
 try {
@@ -65,18 +66,6 @@ let categories = [
     reverse: true,
     format: n => n ? 'ja' : 'nein',
   }
-  /*{
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => e.wellHeight).filter().max(),
-    format: n => (n > 0) ? n.toFixed(2).replace('.', ',') + ' m' : '—',
-    reverse: true,
-  },
-  {
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => +e.wellHeight).filter().max(),
-    reverse: true,
-    format: n => n === -Infinity ? '—' : n.toFixed(2).replace('.', ',') + ' m',
-  },*/
 ];
 
 let cards = new Set();
@@ -85,24 +74,32 @@ let potentialCards = categories.map(category => {
   let filter = category.filter || (() => true);
   let results = _(stations).filter(filter).sortBy(category.find);
   if (category.reverse) results = results.reverse();
+  let res = results.value();
   return results.value();
 });
 
-while (cards.size < potentialCards.length * 4) {
+while (cards.size < potentialCards.length * 24) {
   let group = cards.size % potentialCards.length;
   let card = potentialCards[group].shift();
-  cards.add(card);
+  let category = categories[group];
+  console.log('Category ' + category.name);
+  if (!images[card.name]) {
+    console.log('No image for ' + card.name + ', skipping.');
+  } else {
+    // console.log('Using  ' + card.name + '.');
+    cards.add(card);
+  }
 }
 
-let jannowitz = _.findWhere(stations, { name: 'Jannowitzbrücke' });
-cards.add(jannowitz);
-cards.delete(_.findWhere(stations, { name: 'Anwanden' }));
+//let jannowitz = _.findWhere(stations, { name: 'Jannowitzbrücke' });
+//cards.add(jannowitz);
+//cards.delete(_.findWhere(stations, { name: 'Anwanden' }));
 
 cards = _(Array.from(cards)).sortBy(s => s.state).value();
 
 let i = 0;
 async.eachLimit(cards, 1, (station, cardDone) => {
-  let cardID = ALPHABET[i / 4 | 0] + (i % 4 + 1);
+  let cardID = ALPHABET[i / 24 | 0] + (i % 24 + 1);
   console.log(cardID, station.name);
   let card = {
     name: station.name,

@@ -18,9 +18,9 @@ try {
   if (e.code !== 'EEXIST') throw e;
 }
 
-function findImage(station) {
+function findImage(stationName) {
   return new Promise((resolve, reject) => {
-    let name = station.name;
+    let name = stationName;
     let url = images[name];
     if (!url) return resolve(null);
     url = url.replace(/uselang=..&?/, 'uselang=en');
@@ -45,30 +45,12 @@ function findImage(station) {
       if (e.code !== 'ENOENT') return reject(e);
       console.log('Image not found in cache');
     }
-
-    request(url, function (error, response, body) {
-      if (error || response.statusCode !== 200) {
-        return reject(error);
-      }
-      let $ = cheerio.load(body);
-      let $rows = $('.commons-file-information-table tr');
-      let metadata = {};
-      $rows.each((i, row) => {
-        let $row = $(row);
-        let key = $row.find('td:first-child').text().trim();
-        let value = $row.find('td:not(:first-child)').text().trim();
-        metadata[key] = value;
-      });
-      metadata.url = url;
-      fs.writeFileSync(metadataPath, JSON.stringify(metadata));
-
-      console.log('Fetching image from %s', url);
-      let imageUrl = $('.fullImageLink a').attr('href');
+      let imageUrl = url;
+      let metadata = { 'Author': '' };
       request(imageUrl, { encoding: null }, function (error, res, buffer) {
         if (error || res.statusCode !== 200) {
           return reject(error);
         }
-        console.log('Fetched image from %s', url);
         let imageBuffer = buffer;
         fs.writeFileSync(imagePath, buffer);
         resolve({
@@ -77,7 +59,6 @@ function findImage(station) {
           dimensions: sizeOf(imageBuffer),
         });
       });
-    });
   });
 }
 

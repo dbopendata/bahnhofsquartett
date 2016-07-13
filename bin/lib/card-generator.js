@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const cheerio = require('cheerio');
 const pr = require('path').resolve;
 const fs = require('fs');
+const sizeOf = require('image-size');
 
 const findImage = require('./find-image');
 
@@ -15,6 +16,7 @@ const LINE_HEIGHT = 14;
 
 const VERKEHRSROT = [ 0, 100, 100, 10 ];
 const LICHTGRAU = [ 0, 0, 0, 20 ];
+const GRAU = [ 0, 0, 0, 50 ];
 const WHITE = [ 0, 0, 0, 0 ];
 const BLACK = [ 0, 0, 0, 100 ];
 
@@ -48,6 +50,13 @@ function drawBack(doc, pageX, pageY) {
   doc.fontSize(6).fill(WHITE).text('Bahnhofsquartett, https://git.io/vKUnK', MARGIN, MARGIN-5);
   doc.fontSize(6).fill(WHITE).text('Made on @DBHackathon with @DBOpenData', MARGIN, MARGIN+221);
   doc.restore();
+/*  let imageBuffer = fs.readFileSync(pr(__dirname, '../../src/backside.png'));
+  let image = { image: imageBuffer, dimensions: sizeOf(imageBuffer) };
+          doc.save()
+            .clip()
+            .image(image.image, pageX + 0, pageY + 0, {width:WIDTH})
+            .restore();*/
+
 }
 
 function makePDF(card) {
@@ -66,7 +75,7 @@ function makePDF(card) {
       let pageX = MARGIN + ((i / 3 | 0) % 3) * (WIDTH + MARGIN);
       let pageY = MARGIN + (i % 3) * (HEIGHT + MARGIN);
 
-      findImage(card).then(image => {
+      findImage(card.name).then(image => {
         let y = 0;
         doc.rect(pageX + 0, pageY + 0, WIDTH, HEIGHT / 2.5);
         y = HEIGHT / 2.2;
@@ -93,12 +102,12 @@ function makePDF(card) {
             .restore();
 
           // Attribution
-          doc.fontSize(5)
+/*          doc.fontSize(5)
             .fill(WHITE)
             .text(
               image.metadata.Author || image.metadata.url,
               pageX + MARGIN / 2 + 2,
-              pageY + HEIGHT / 2.5 - 8);
+              pageY + HEIGHT / 2.5 - 8);*/
         } else {
           doc.fill(LICHTGRAU);
         }
